@@ -45,10 +45,24 @@ function formatarPedido() {
         '3d': "Película 3D",
     };
 
+    // --- EXPLICAÇÃO SOBRE PREFIXOS ---
+    // Muitas vezes, listas de pedidos exportadas de sistemas ou plataformas (como WhatsApp, ERPs, CRMs, etc)
+    // vêm com prefixos automáticos em cada linha, por exemplo:
+    // [10:23] João: bateria samsung a10
+    // Esses prefixos geralmente mostram horário, nome do usuário, ou outros dados que não são relevantes para o pedido.
+    // Para facilitar a leitura e o processamento, removemos esses prefixos usando uma expressão regular.
+    // A expressão /\[.*?\]\s*.*?:\s*/ procura por:
+    // - Qualquer coisa entre colchetes (ex: [10:23])
+    // - Espaços em branco
+    // - Qualquer texto até dois pontos (ex: João:)
+    // - Espaços em branco após os dois pontos
+    // Tudo isso é substituído por "", ou seja, removido da linha.
+    // Assim, a linha "[10:23] João: bateria samsung a10" vira apenas "bateria samsung a10".
+
     // Remove prefixos e caracteres especiais das linhas
     let linhas = mensagem.split("\n").map(linha => linha.replace(/\[.*?\]\s*.*?:\s*/, ""));
     mensagem = linhas.join(" ");
-    mensagem = mensagem.replace(/<.*?>|\(.*?\)/g, "");
+    mensagem = mensagem.replace(/<.*?>|\(.*?\)/g, ""); // Remove tags e parênteses
 
     let listaFormatada = []; // Lista final formatada
     let itemAtual = "";      // Texto do item atual
