@@ -47,9 +47,10 @@ A interface é bastante intuitiva. Basta seguir os seguintes passos:
 
 Este é um projeto em constante evolução. Futuras melhorias podem incluir:
 
-  - Reconhecimento de mais tipos de peças e modelos de aparelhos.
+  - Reconhecimento de mais tipos de peças.
   - Adicionar a capacidade de salvar pedidos anteriores.
-  - Integração com APIs de fornecedores para envio direto dos pedidos.
+  - Criar integração com API do WhatsApp.
+  - Deixar temas claro/escuro automática
 
 Sinta-se à vontade para explorar o código, dar sugestões ou contribuir\!
 
