@@ -17,7 +17,7 @@ A ideia nasceu da necessidade de converter as mensagens de pedidos de peças que
 
 O Gerador de Pedidos executa as seguintes tarefas, tornando o processo muito mais eficiente:
 
-  - **Formatação Inteligente**: Converte textos com diferentes formatações e prefixos em uma lista de itens organizada, um por linha.
+  - **Formatação Inteligente**: Converte textos com diferentes formatações e prefixos em uma lista de itens organizada, um por linha. Ex. uma mensagem que copiamos do grupo do whatsapp com a seguinte sintaxe 'tipo de peça' 'modelo' 'hora que precisa da peça (informação interna, será excluida do pedido principal)' fica assim um pedido real encaminhado do grupo do whatsapp (Tela moto g23 ( hj 15:00) Frontal e20 (hoje de noite) Tela a12) - fica dificil a compreenção do fornecedor e tambem manipular esse texto no celular pro fornecedor passa a ser exaustivo. entao pra isso foi criada a ferramenta.
   - **Identificação e Padronização**: Utiliza um dicionário interno para reconhecer os tipos de peças (ex: "tela", "bateria", "câmera") e padroniza seus nomes, garantindo consistência em todos os pedidos.
   - **Resumo do Pedido**: Gera um resumo estatístico do pedido, mostrando o número total de peças e a quantidade de cada tipo de item.
   - **Alternância de Tema**: Oferece a opção de alternar entre os temas claro e escuro para maior conforto visual. O tema escolhido é salvo no navegador.
@@ -29,8 +29,8 @@ O Gerador de Pedidos executa as seguintes tarefas, tornando o processo muito mai
 
 A interface é bastante intuitiva. Basta seguir os seguintes passos:
 
-1.  **Cole o texto**: No campo de entrada, insira a mensagem ou a lista de peças que você deseja formatar.
-2.  **Clique em "Formatar Pedido"**: A ferramenta processará o texto e exibirá o resultado formatado no campo de saída.
+1.  **Cole o texto**: No campo de entrada, insira a mensagem ( Tela moto g23 branco ( hj 15:00) Frontal e20 (hoje de noite) Tela a12) - essa é uma mensagem copiada de um grupo de peças que usamos no whatsapp, o formatador vai editar a mensagem e editar de forma clara para que o fornecedor entenda
+2.  **Clique em "Formatar Pedido"**: A ferramenta processará o texto e exibirá o resultado formatado no campo de saída de forma clara para quem vai serapar a peça entenda.
 3.  **Copie ou Baixe**: Use os botões para copiar o texto formatado e o resumo para a área de transferência, ou para fazer o download de um arquivo `.txt` com o pedido.
 
 -----
