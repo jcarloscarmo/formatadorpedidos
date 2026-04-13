@@ -1,6 +1,12 @@
 # LojaCell Pedidos
 
-Sistema SPA para gestão de pedidos de peças com persistência local em `localStorage`.
+Sistema SPA para gestão de pedidos de peças com persistência local em `localStorage`, criado para facilitar a rotina de manutenção de celulares e o envio de pedidos para fornecedores.
+
+## Sobre
+
+O projeto nasceu da necessidade prática de transformar mensagens de pedidos vindas de grupos de WhatsApp em pedidos claros, padronizados e fáceis de conferir.
+
+Hoje o sistema foi além do simples formatador e funciona como um painel local de gestão de pedidos.
 
 ## Stack
 
@@ -12,27 +18,27 @@ Sistema SPA para gestão de pedidos de peças com persistência local em `localS
 ## Fluxo Atual
 
 1. `Novo Pedido`
-   Cole o texto bruto do pedido.
-   O sistema identifica as peças, cria o pedido e gera a mensagem formatada para WhatsApp.
+Cole o texto bruto do pedido.
+O sistema identifica as peças, cria o pedido e gera a mensagem formatada para WhatsApp.
 
 2. `Fila`
-   Mostra pedidos aguardando conferência.
+Mostra pedidos aguardando conferência.
 
 3. `Conferência`
-   Permite validar recebimento, definir preço por peça e informar frete.
-   Ao faturar, o pedido vai para o relatório.
+Permite validar recebimento, definir preço por peça e informar frete.
+Ao faturar, o pedido vai para o relatório.
 
 4. `Relatório`
-   Mostra pedidos faturados, total acumulado e divergências.
-   Também permite edição rápida de pedidos faturados.
+Mostra pedidos faturados, total acumulado e divergências.
+Também permite edição rápida de pedidos faturados.
 
 5. `Revisão`
-   Mostra as peças do período selecionado.
-   Nessa etapa é possível marcar peças como `devolvido`.
+Mostra as peças do período selecionado.
+Nessa etapa é possível marcar peças como `devolvido`.
 
 6. `Visualização`
-   Prévia final pronta para impressão.
-   O salvamento em PDF é feito pelo próprio navegador via `window.print()`.
+Prévia final pronta para impressão.
+O salvamento em PDF é feito pelo próprio navegador via `window.print()`.
 
 ## Edição Rápida no Relatório
 
@@ -54,13 +60,13 @@ Você pode:
 
 Os pedidos ficam salvos no navegador usando `localStorage`.
 
-Chave principal usada pelo sistema original:
+Chave principal usada pelo sistema:
 
 - `lojacell_pedidos`
 
 Observação:
 
-- o botão `Zerar Memória` atualmente usa `localStorage.clear()` e limpa todo o armazenamento local do navegador para este domínio.
+- o botão `Zerar Memória` usa `localStorage.clear()` e limpa todo o armazenamento local do domínio atual
 
 ## IDs de Pedido
 
@@ -110,13 +116,11 @@ No mobile, o balão pode ser aberto com toque.
 
 ## Fluxo Guiado
 
-As etapas de relatório agora exibem um indicador visual de progresso:
+As etapas de relatório exibem um indicador visual de progresso:
 
 1. `Relatório`
 2. `Revisão`
 3. `Visualização`
-
-Isso ajuda a deixar claro em qual ponto do processo você está antes de imprimir ou salvar em PDF.
 
 ## Desenvolvimento Local
 
