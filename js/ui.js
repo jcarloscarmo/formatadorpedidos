@@ -36,11 +36,16 @@ function renderTelaEntrada(onFormatar, onProcessar) {
   const btn = $('#btn-processar');
   const textarea = $('#input-pedido');
   const resultadoDiv = $('#resultado-formatado');
+  const resumoDiv = $('#resumo-pedido');
   const btnCopiar = $('#btn-copiar');
 
   const mostrarResultado = (resultado) => {
     resultadoDiv.textContent = resultado.textoFormatado;
     resultadoDiv.classList.remove('hidden');
+    const linhasResumo = Object.entries(resultado.contadorTipos)
+      .map(([tipo, qtd]) => `${tipo}: ${qtd}`);
+    resumoDiv.innerHTML = `<strong>Resumo do Pedido:</strong><br>Total de peças: ${resultado.total}<br>${linhasResumo.join('<br>')}`;
+    resumoDiv.classList.remove('hidden');
     btnCopiar.classList.remove('hidden');
   };
 

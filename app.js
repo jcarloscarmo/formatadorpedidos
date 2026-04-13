@@ -157,6 +157,8 @@ function zerarMemoria() {
   // Limpa visuais residuais
   document.getElementById('resultado-formatado').textContent = '';
   document.getElementById('resultado-formatado').classList.add('hidden');
+  document.getElementById('resumo-pedido').innerHTML = '';
+  document.getElementById('resumo-pedido').classList.add('hidden');
   document.getElementById('btn-copiar').classList.add('hidden');
   document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
   document.getElementById('relatorio-conteudo').innerHTML = '';
