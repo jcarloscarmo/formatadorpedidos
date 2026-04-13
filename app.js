@@ -108,6 +108,11 @@ function processarPedido(texto) {
   return resultado;
 }
 
+function formatarPedido(texto) {
+  const resultado = parsearPedido(texto);
+  return resultado.itens.length === 0 ? null : resultado;
+}
+
 function iniciarConferencia(pedidoId) {
   const pedido = storage.buscarPedido(pedidoId);
   if (!pedido) return;
@@ -222,6 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTema();
   initNavegacao();
   initHelpBadges();
-  renderTelaEntrada(processarPedido);
+  renderTelaEntrada(formatarPedido, processarPedido);
   navegarPara('tela-entrada');
 });

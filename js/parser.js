@@ -76,10 +76,12 @@ export function parsearPedido(textoEntrada) {
   }
 
   const total = listaFormatada.length;
+  const temTela = itens.some(item => item.tipo === 'Tela');
   const textoFormatado =
     'Olá, poderia separar por favor\n\n' +
     listaFormatada.join('\n') +
-    `\n\nHá um total de ${total} peças, favor conferir por gentileza.`;
+    `\n\nHá um total de ${total} peças, favor conferir por gentileza.` +
+    (temTela ? '\nEnviar peliculas por favor' : '');
 
   return { itens, textoFormatado, contadorTipos, total };
 }

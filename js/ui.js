@@ -30,11 +30,46 @@ function navegarPara(secaoId) {
 
 // ─── Tela 1: Entrada de Pedido ─────────────────────────────
 
-function renderTelaEntrada(onProcessar) {
+function renderTelaEntrada(onFormatar, onProcessar) {
+  const btnColar = $('#btn-colar');
+  const btnFormatar = $('#btn-formatar');
   const btn = $('#btn-processar');
   const textarea = $('#input-pedido');
   const resultadoDiv = $('#resultado-formatado');
   const btnCopiar = $('#btn-copiar');
+
+  const mostrarResultado = (resultado) => {
+    resultadoDiv.textContent = resultado.textoFormatado;
+    resultadoDiv.classList.remove('hidden');
+    btnCopiar.classList.remove('hidden');
+  };
+
+  btnColar.onclick = async () => {
+    try {
+      const texto = await navigator.clipboard.readText();
+      if (!texto) {
+        mostrarToast('A área de transferência está vazia.', 'error');
+        return;
+      }
+      textarea.value = texto;
+      mostrarToast('Texto colado com sucesso!');
+    } catch {
+      mostrarToast('Não foi possível colar da área de transferência.', 'error');
+    }
+  };
+
+  btnFormatar.onclick = () => {
+    const texto = textarea.value.trim();
+    if (!texto) {
+      mostrarToast('Insira o texto do pedido.', 'error');
+      return;
+    }
+    const resultado = onFormatar(texto);
+    if (resultado) {
+      mostrarResultado(resultado);
+      mostrarToast(`Mensagem formatada com ${resultado.total} peça(s)!`);
+    }
+  };
 
   btn.onclick = () => {
     const texto = textarea.value.trim();
@@ -44,9 +79,7 @@ function renderTelaEntrada(onProcessar) {
     }
     const resultado = onProcessar(texto);
     if (resultado) {
-      resultadoDiv.textContent = resultado.textoFormatado;
-      resultadoDiv.classList.remove('hidden');
-      btnCopiar.classList.remove('hidden');
+      mostrarResultado(resultado);
       mostrarToast(`Pedido registrado com ${resultado.total} peça(s)!`);
       textarea.value = '';
     }

@@ -22,11 +22,13 @@
 
   <main class="container">
     <section id="tela-entrada" class="secao">
-      <h2>Entrada de Pedido <button class="help-badge" type="button" data-help="Cole o texto bruto do pedido. O sistema separa as peças, cria o pedido e prepara a mensagem para WhatsApp.">?</button></h2>
+      <h2>Entrada de Pedido <button class="help-badge" type="button" data-help="Use Colar para trazer o texto da área de transferência, Formatar para apenas gerar a mensagem e Processar Pedido para criar o pedido e enviar para o próximo passo.">?</button></h2>
       <label for="input-pedido">Cole a lista de peças abaixo:</label>
       <textarea id="input-pedido" rows="8" placeholder="Cole aqui a lista de peças do pedido..."></textarea>
       <div class="button-group">
-        <button id="btn-processar" class="btn btn-primary">Processar Pedido</button>
+        <button id="btn-colar" class="btn btn-secondary" type="button">Colar</button>
+        <button id="btn-formatar" class="btn btn-primary" type="button">Formatar</button>
+        <button id="btn-processar" class="btn btn-success" type="button">Processar Pedido</button>
       </div>
       <div id="resultado-formatado" class="resultado hidden"></div>
       <div class="button-group">
