@@ -778,6 +778,17 @@ input[type="text"]:focus {
   font-size: 0.85rem;
 }
 
+.edicao-loja-grupo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.edicao-loja-grupo .radio-loja {
+  margin: 0;
+}
+
 /* ─── Filtro por Período ───────────────────────────────── */
 .filtro-periodo {
   padding: 16px;

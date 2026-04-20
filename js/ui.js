@@ -335,7 +335,7 @@ function renderRelatorio(
     });
     const subtotal = subtotalPecas + (pedido.custoFrete || 0);
     const itensHtml = pedido.itens.map((item, idx) => `
-      <div class="edicao-item" data-idx="${idx}">
+      <div class="edicao-item" data-idx="${idx}" data-loja-original="${item.loja || ''}">
         <div class="edicao-item-grid">
           <input type="text" class="edicao-item-tipo" value="${item.tipo}" placeholder="Tipo">
           <input type="text" class="edicao-item-nome" value="${item.nomeOriginal}" placeholder="Nome da peça">
@@ -345,6 +345,16 @@ function renderRelatorio(
           <label><input type="checkbox" class="edicao-item-recebido" ${item.recebido ? 'checked' : ''}> Recebida</label>
           <label><input type="checkbox" class="edicao-item-divergencia" ${item.divergencia ? 'checked' : ''}> Divergência</label>
           <label><input type="checkbox" class="edicao-item-devolvido" ${item.devolvido ? 'checked' : ''}> Devolvido</label>
+          <div class="edicao-loja-grupo">
+            <label class="radio-loja">
+              <input type="radio" name="edicao-loja-${pedido.id}-${idx}" value="potim" ${item.loja === 'potim' ? 'checked' : ''}>
+              <span class="badge-loja potim">Potim</span>
+            </label>
+            <label class="radio-loja">
+              <input type="radio" name="edicao-loja-${pedido.id}-${idx}" value="roseira" ${item.loja === 'roseira' ? 'checked' : ''}>
+              <span class="badge-loja roseira">Roseira</span>
+            </label>
+          </div>
           <button class="btn btn-danger btn-sm btn-remover-item" type="button">Excluir peça</button>
         </div>
       </div>
@@ -493,9 +503,12 @@ function renderRelatorio(
   container.querySelectorAll('.btn-adicionar-item').forEach(btn => {
     btn.onclick = () => {
       const bloco = btn.closest('.relatorio-edicao');
+      const pedidoId = bloco.dataset.edicaoId;
       const lista = bloco.querySelector('.edicao-itens');
+      const novoIdx = lista.querySelectorAll('.edicao-item').length;
       const item = document.createElement('div');
       item.className = 'edicao-item';
+      item.dataset.lojaOriginal = '';
       item.innerHTML = `
         <div class="edicao-item-grid">
           <input type="text" class="edicao-item-tipo" placeholder="Tipo">
@@ -506,6 +519,16 @@ function renderRelatorio(
           <label><input type="checkbox" class="edicao-item-recebido" checked> Recebida</label>
           <label><input type="checkbox" class="edicao-item-divergencia"> Divergência</label>
           <label><input type="checkbox" class="edicao-item-devolvido"> Devolvido</label>
+          <div class="edicao-loja-grupo">
+            <label class="radio-loja">
+              <input type="radio" name="edicao-loja-${pedidoId}-${novoIdx}" value="potim">
+              <span class="badge-loja potim">Potim</span>
+            </label>
+            <label class="radio-loja">
+              <input type="radio" name="edicao-loja-${pedidoId}-${novoIdx}" value="roseira">
+              <span class="badge-loja roseira">Roseira</span>
+            </label>
+          </div>
           <button class="btn btn-danger btn-sm btn-remover-item" type="button">Excluir peça</button>
         </div>
       `;
@@ -526,16 +549,26 @@ function renderRelatorio(
       const bloco = btn.closest('.relatorio-edicao');
       const pedidoId = bloco.dataset.edicaoId;
       const custoFrete = parseFloat(bloco.querySelector('.edicao-frete').value) || 0;
+      
       const itens = Array.from(bloco.querySelectorAll('.edicao-item')).map(itemEl => {
+        const idx = itemEl.dataset.idx;
+        const lojaOriginal = itemEl.dataset.lojaOriginal;
         const recebido = itemEl.querySelector('.edicao-item-recebido').checked;
         const divergencia = itemEl.querySelector('.edicao-item-divergencia').checked;
+        const devolvido = itemEl.querySelector('.edicao-item-devolvido').checked;
+        
+        // Captura loja selecionada ou preserva original
+        const radioLoja = itemEl.querySelector('input[type="radio"]:checked');
+        const loja = devolvido ? null : (radioLoja ? radioLoja.value : (lojaOriginal || null));
+        
         return {
           tipo: itemEl.querySelector('.edicao-item-tipo').value.trim() || 'Peça',
           nomeOriginal: itemEl.querySelector('.edicao-item-nome').value.trim() || 'Peça sem nome',
           valorUnitario: parseFloat(itemEl.querySelector('.edicao-item-valor').value) || 0,
           recebido,
           divergencia,
-          devolvido: itemEl.querySelector('.edicao-item-devolvido').checked,
+          devolvido,
+          loja
         };
       });
 
