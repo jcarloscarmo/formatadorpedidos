@@ -5,6 +5,7 @@ import * as storage from './js/storage.js';
 import { parsearPedido } from './js/parser.js';
 import {
   navegarPara,
+  atualizarBadgeFila,
   renderTelaEntrada,
   renderFilaEspera,
   renderConferencia,
@@ -134,6 +135,11 @@ function processarPedido(texto) {
   if (resultado.itens.length === 0) return null;
 
   storage.criarPedido(resultado.itens);
+  
+  // Atualiza badge da fila
+  const aguardando = storage.listarPorStatus('AGUARDANDO');
+  atualizarBadgeFila(aguardando.length);
+  
   return resultado;
 }
 
@@ -270,4 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initHelpBadges();
   renderTelaEntrada(formatarPedido, processarPedido);
   navegarPara('tela-entrada');
+  
+  // Atualiza badge da fila ao carregar
+  const aguardando = storage.listarPorStatus('AGUARDANDO');
+  atualizarBadgeFila(aguardando.length);
 });

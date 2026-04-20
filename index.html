@@ -36,7 +36,7 @@
     </section>
 
     <section id="tela-conferencia" class="secao hidden">
-      <h2>Conferência <button class="help-badge" type="button" data-help="Defina valor de cada peça, confirme recebimento e informe o frete. Ao faturar, o pedido entra no relatório.">?</button></h2>
+      <h2>Conferência <button class="help-badge" type="button" data-help="Defina valor de cada peça, confirme recebimento, selecione a loja (Potim/Roseira) e informe o frete. Ao faturar, o pedido entra no relatório.">?</button></h2>
       <div id="conferencia-conteudo">
         <p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>
       </div>
@@ -48,7 +48,7 @@
     </section>
 
     <section id="tela-revisao" class="secao hidden">
-      <h2>Revisão <button class="help-badge" type="button" data-help="Revise as peças do período, marque lojas (Potim/Roseira) e as devolvidas. Os valores são calculados automaticamente.">?</button></h2>
+      <h2>Revisão <button class="help-badge" type="button" data-help="Revise as peças do período e marque as devolvidas. As lojas foram definidas na conferência. Os valores são calculados automaticamente.">?</button></h2>
       <div id="revisao-conteudo"></div>
     </section>
 
@@ -66,6 +66,7 @@
     </button>
     <button class="nav-item" data-secao="tela-fila">
       <i class="fas fa-clock"></i>
+      <span class="badge-contador hidden" id="badge-fila">0</span>
       <span>Fila</span>
     </button>
     <button class="nav-item" data-secao="tela-conferencia">

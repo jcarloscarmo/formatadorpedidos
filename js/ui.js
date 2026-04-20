@@ -16,6 +16,19 @@ function mostrarToast(msg, tipo = 'success') {
   setTimeout(() => { toast.className = 'toast'; }, 3000);
 }
 
+/** Atualiza badge contador da fila */
+function atualizarBadgeFila(quantidade) {
+  const badge = $('#badge-fila');
+  if (!badge) return;
+  
+  if (quantidade > 0) {
+    badge.textContent = quantidade;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
 /** Alterna visibilidade das seções. Mostra apenas a seção com o id informado. */
 function navegarPara(secaoId) {
   $$('.secao').forEach(s => s.classList.add('hidden'));
@@ -111,6 +124,9 @@ function renderTelaEntrada(onFormatar, onProcessar) {
 function renderFilaEspera(pedidosAguardando, onIniciarConferencia) {
   const lista = $('#lista-fila');
   lista.innerHTML = '';
+  
+  // Atualiza badge da navegação
+  atualizarBadgeFila(pedidosAguardando.length);
 
   if (pedidosAguardando.length === 0) {
     lista.innerHTML = '<p class="empty-state">Nenhum pedido na fila.</p>';
@@ -244,23 +260,13 @@ function renderConferencia(pedido, precosHistoricos, onFaturar, onVoltar) {
   const faturarPedido = () => {
     const custoFrete = parseFloat($('#input-frete').value) || 0;
     
-    // Validação e captura de dados
-    let temErro = false;
-    const erros = [];
-    
     const itensAtualizados = pedido.itens.map((item, idx) => {
       const el = container.querySelector(`.item-conferencia[data-idx="${idx}"]`);
       const recebido = el.querySelector('.check-recebido').checked;
       const valorUnitario = parseFloat(el.querySelector('.input-valor').value) || 0;
       
-      // Captura loja selecionada
+      // Captura loja selecionada (OPCIONAL)
       const radioLoja = el.querySelector(`input[name="loja-${idx}"]:checked`);
-      
-      // VALIDAÇÃO: se recebido, DEVE ter loja
-      if (recebido && !radioLoja) {
-        temErro = true;
-        erros.push(`${item.tipo} - ${item.nomeOriginal}`);
-      }
       
       return {
         ...item,
@@ -270,12 +276,6 @@ function renderConferencia(pedido, precosHistoricos, onFaturar, onVoltar) {
         loja: recebido && radioLoja ? radioLoja.value : null
       };
     });
-    
-    if (temErro) {
-      mostrarToast('⚠️ Todas as peças recebidas devem ter uma loja marcada!', 'error');
-      console.error('Peças sem loja:', erros);
-      return;
-    }
 
     onFaturar(pedido.id, { custoFrete, itens: itensAtualizados, status: 'FATURADO' });
     mostrarToast('Pedido faturado com sucesso!');
@@ -836,6 +836,9 @@ function calcularTotaisLojas(pedidos) {
   let totalFreteRoseira = 0;
   let qtdPecasPotim = 0;
   let qtdPecasRoseira = 0;
+  let qtdPecasSemLoja = 0;
+  let valorPecasSemLoja = 0;
+  let pedidosSemLoja = new Set(); // IDs dos pedidos com peças sem loja
   
   pedidos.forEach(pedido => {
     // Peças por loja
@@ -844,10 +847,14 @@ function calcularTotaisLojas(pedidos) {
         if (item.loja === 'potim') {
           totalPecasPotim += item.valorUnitario;
           qtdPecasPotim++;
-        }
-        if (item.loja === 'roseira') {
+        } else if (item.loja === 'roseira') {
           totalPecasRoseira += item.valorUnitario;
           qtdPecasRoseira++;
+        } else {
+          // Peça sem loja definida
+          qtdPecasSemLoja++;
+          valorPecasSemLoja += item.valorUnitario;
+          pedidosSemLoja.add(pedido.id);
         }
       }
     });
@@ -870,6 +877,11 @@ function calcularTotaisLojas(pedidos) {
       frete: totalFreteRoseira,
       total: totalPecasRoseira + totalFreteRoseira,
       quantidade: qtdPecasRoseira
+    },
+    semLoja: {
+      quantidade: qtdPecasSemLoja,
+      valor: valorPecasSemLoja,
+      pedidos: Array.from(pedidosSemLoja)
     }
   };
 }
@@ -883,8 +895,8 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
   // Calcula totalizadores por loja
   const totaisLojas = calcularTotaisLojas(pedidos);
   
-  // Total geral de peças
-  const totalPecasGeral = totaisLojas.potim.quantidade + totaisLojas.roseira.quantidade;
+  // Total geral de peças (incluindo sem loja)
+  const totalPecasGeral = totaisLojas.potim.quantidade + totaisLojas.roseira.quantidade + totaisLojas.semLoja.quantidade;
 
   const pedidosHtml = resumoPedidos.map(resumo => {
     // Busca pedido original para pegar divisão de frete
@@ -962,10 +974,19 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
   ` : '';
   
   // Totalizador por loja (NOVO)
+  const avisoSemLoja = totaisLojas.semLoja.quantidade > 0 
+    ? `<div class="totalizador-aviso">
+         <p><strong>⚠️ ${totaisLojas.semLoja.quantidade} peças (R$ ${totaisLojas.semLoja.valor.toFixed(2)})</strong> sem loja definida</p>
+         <p class="aviso-pedidos">Pedidos: ${totaisLojas.semLoja.pedidos.map(id => `#${extrairSufixoId(id)}`).join(', ')}</p>
+         <p class="aviso-instrucao">Edite esses pedidos no Relatório ou refature para definir as lojas.</p>
+       </div>`
+    : '';
+  
   const totalizadorHtml = `
     <section class="preview-secao totalizador-lojas">
       <h3>Totalizador por Loja</h3>
       <p class="totalizador-geral"><strong>Total de peças usadas:</strong> ${totalPecasGeral} peças</p>
+      ${avisoSemLoja}
       
       <div class="totalizador-loja potim">
         <h4><span class="badge-loja potim">POTIM</span></h4>
@@ -1049,6 +1070,7 @@ function _formatarDataBR(isoStr) {
 export {
   navegarPara,
   mostrarToast,
+  atualizarBadgeFila,
   renderTelaEntrada,
   renderFilaEspera,
   renderConferencia,

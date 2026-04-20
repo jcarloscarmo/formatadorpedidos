@@ -139,6 +139,7 @@ body {
   font-size: 0.7rem;
   font-weight: 500;
   padding: 8px 4px;
+  position: relative; /* Para posicionar o badge */
 }
 
 .nav-item i {
@@ -156,6 +157,36 @@ body {
 
 .nav-item.active i {
   transform: scale(1.1);
+}
+
+/* Badge contador na navegação */
+.badge-contador {
+  position: absolute;
+  top: 6px;
+  right: 50%;
+  transform: translateX(12px);
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: translateX(12px) scale(1);
+  }
+  50% {
+    transform: translateX(12px) scale(1.1);
+  }
 }
 
 /* ─── Container Principal ──────────────────────────────── */
@@ -1174,6 +1205,39 @@ input[type="text"]:focus {
   font-weight: 600;
 }
 
+.totalizador-aviso {
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 16px;
+  background: #fff3cd;
+  color: #856404;
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.totalizador-aviso .aviso-pedidos {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  color: #664d03;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-left: 4px solid #ff9800;
+}
+
+.totalizador-aviso .aviso-instrucao {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: #664d03;
+  font-style: italic;
+  opacity: 0.9;
+}
+
 .totalizador-loja {
   padding: 16px;
   border: 2px solid var(--border);
@@ -1311,6 +1375,24 @@ input[type="text"]:focus {
   }
 }
 
+/* ─── Dark Mode Overrides ──────────────────────────────── */
+:root[data-theme="dark"] .totalizador-aviso {
+  background: #3d3200;
+  color: #ffd54f;
+  border-color: #ffc107;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+:root[data-theme="dark"] .totalizador-aviso .aviso-pedidos {
+  background: rgba(255, 213, 79, 0.1);
+  color: #ffeb3b;
+  border-left-color: #ff9800;
+}
+
+:root[data-theme="dark"] .totalizador-aviso .aviso-instrucao {
+  color: #ffd54f;
+}
+
 /* ─── Responsividade Desktop ───────────────────────────── */
 @media (min-width: 768px) {
   .app-header h1 {
@@ -1367,12 +1449,8 @@ input[type="text"]:focus {
 /* Desktop: Esconder bottom nav, mostrar tabs */
 @media (min-width: 768px) {
   body {
-    padding-bottom: 24px;
+    padding-bottom: 70px; /* Mantém espaço para bottom nav */
   }
 
-  .bottom-nav {
-    display: none;
-  }
-
-  /* Criar tabs no desktop se necessário - por ora escondemos */
+  /* Mantém bottom-nav visível no desktop também */
 }

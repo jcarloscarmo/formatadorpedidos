@@ -22,6 +22,8 @@ const TIPOS_PECAS = {
   'película': 'Película',
   'pelicula': 'Película',
   'gaveta': 'Gaveta de chip',
+  'alcool': 'Álcool isopropílico 1L',
+  'álcool': 'Álcool isopropílico 1L',
 };
 
 /**
