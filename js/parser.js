@@ -21,6 +21,7 @@ const TIPOS_PECAS = {
   'conector': 'Conector',
   'película': 'Película',
   'pelicula': 'Película',
+  'gaveta': 'Gaveta de chip',
 };
 
 /**
@@ -77,11 +78,18 @@ export function parsearPedido(textoEntrada) {
 
   const total = listaFormatada.length;
   const temTela = itens.some(item => item.tipo === 'Tela');
+  
+  // Monta resumo por tipo
+  const resumoTipos = Object.entries(contadorTipos)
+    .map(([tipo, qtd]) => `• ${tipo}: *${qtd}*`)
+    .join('\n');
+  
   const textoFormatado =
-    'Olá, poderia separar por favor\n\n' +
+    '*Olá, poderia separar por favor* 🛒\n\n' +
     listaFormatada.join('\n') +
-    `\n\nHá um total de ${total} peças, favor conferir por gentileza.` +
-    (temTela ? '\nEnviar peliculas por favor' : '');
+    `\n\n*📦 Resumo do Pedido*\n${resumoTipos}\n\n` +
+    `*Total: ${total} peças* - favor conferir por gentileza ✅` +
+    (temTela ? '\n\n💡 _Enviar películas por favor_' : '');
 
   return { itens, textoFormatado, contadorTipos, total };
 }

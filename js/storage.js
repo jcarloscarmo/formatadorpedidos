@@ -83,7 +83,8 @@ export function criarPedido(itens) {
       recebido: true,
       valorUnitario: 0,
       divergencia: false,
-      devolvido: false
+      devolvido: false,
+      loja: null
     }))
   };
   pedidos.push(novo);

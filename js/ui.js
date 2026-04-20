@@ -22,8 +22,8 @@ function navegarPara(secaoId) {
   const alvo = $('#' + secaoId);
   if (alvo) alvo.classList.remove('hidden');
 
-  // Atualiza abas ativas
-  $$('.tab-btn').forEach(btn => {
+  // Atualiza bottom nav ativa
+  $$('.nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.secao === secaoId);
   });
 }
@@ -47,6 +47,23 @@ function renderTelaEntrada(onFormatar, onProcessar) {
     resumoDiv.innerHTML = `<strong>Resumo do Pedido:</strong><br>Total de peças: ${resultado.total}<br>${linhasResumo.join('<br>')}`;
     resumoDiv.classList.remove('hidden');
     btnCopiar.classList.remove('hidden');
+  };
+  
+  const processar = () => {
+    const texto = textarea.value.trim();
+    if (!texto) {
+      mostrarToast('Insira o texto do pedido.', 'error');
+      return;
+    }
+    const resultado = onProcessar(texto);
+    if (resultado) {
+      mostrarResultado(resultado);
+      mostrarToast(`Pedido registrado com ${resultado.total} peça(s)!`);
+      textarea.value = '';
+      resultadoDiv.classList.add('hidden');
+      resumoDiv.classList.add('hidden');
+      btnCopiar.classList.add('hidden');
+    }
   };
 
   btnColar.onclick = async () => {
@@ -76,19 +93,7 @@ function renderTelaEntrada(onFormatar, onProcessar) {
     }
   };
 
-  btn.onclick = () => {
-    const texto = textarea.value.trim();
-    if (!texto) {
-      mostrarToast('Insira o texto do pedido.', 'error');
-      return;
-    }
-    const resultado = onProcessar(texto);
-    if (resultado) {
-      mostrarResultado(resultado);
-      mostrarToast(`Pedido registrado com ${resultado.total} peça(s)!`);
-      textarea.value = '';
-    }
-  };
+  btn.onclick = processar;
 
   btnCopiar.onclick = () => {
     const texto = resultadoDiv.textContent;
@@ -168,6 +173,19 @@ function renderConferencia(pedido, precosHistoricos, onFaturar, onVoltar) {
               Recebida
             </label>
           </div>
+          <div class="campo-loja">
+            <label>Loja:</label>
+            <div class="radio-group">
+              <label class="radio-loja">
+                <input type="radio" name="loja-${idx}" value="potim" ${item.loja === 'potim' ? 'checked' : ''}>
+                <span class="badge-loja potim">Potim</span>
+              </label>
+              <label class="radio-loja">
+                <input type="radio" name="loja-${idx}" value="roseira" ${item.loja === 'roseira' ? 'checked' : ''}>
+                <span class="badge-loja roseira">Roseira</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -223,23 +241,47 @@ function renderConferencia(pedido, precosHistoricos, onFaturar, onVoltar) {
   atualizarResumo();
 
   // Botão Faturar
-  $('#btn-faturar').onclick = () => {
+  const faturarPedido = () => {
     const custoFrete = parseFloat($('#input-frete').value) || 0;
+    
+    // Validação e captura de dados
+    let temErro = false;
+    const erros = [];
+    
     const itensAtualizados = pedido.itens.map((item, idx) => {
       const el = container.querySelector(`.item-conferencia[data-idx="${idx}"]`);
       const recebido = el.querySelector('.check-recebido').checked;
       const valorUnitario = parseFloat(el.querySelector('.input-valor').value) || 0;
+      
+      // Captura loja selecionada
+      const radioLoja = el.querySelector(`input[name="loja-${idx}"]:checked`);
+      
+      // VALIDAÇÃO: se recebido, DEVE ter loja
+      if (recebido && !radioLoja) {
+        temErro = true;
+        erros.push(`${item.tipo} - ${item.nomeOriginal}`);
+      }
+      
       return {
         ...item,
         recebido,
         valorUnitario: recebido ? valorUnitario : 0,
-        divergencia: !recebido
+        divergencia: !recebido,
+        loja: recebido && radioLoja ? radioLoja.value : null
       };
     });
+    
+    if (temErro) {
+      mostrarToast('⚠️ Todas as peças recebidas devem ter uma loja marcada!', 'error');
+      console.error('Peças sem loja:', erros);
+      return;
+    }
 
     onFaturar(pedido.id, { custoFrete, itens: itensAtualizados, status: 'FATURADO' });
     mostrarToast('Pedido faturado com sucesso!');
   };
+
+  $('#btn-faturar').onclick = faturarPedido;
 
   // Botão Voltar
   $('#btn-voltar-fila').onclick = () => onVoltar();
@@ -403,7 +445,7 @@ function renderRelatorio(
   $('#filtro-fim').value = _formatDateInput(hoje);
 
   // ── Botão Gerar PDF ──
-  $('#btn-gerar-pdf').onclick = () => {
+  const gerarRelatorio = () => {
     const inicioStr = $('#filtro-inicio').value;
     const fimStr = $('#filtro-fim').value;
 
@@ -429,6 +471,8 @@ function renderRelatorio(
 
     onGerarPdf(pedidosFiltrados, inicioStr, fimStr);
   };
+
+  $('#btn-gerar-pdf').onclick = gerarRelatorio;
 
   // ── Botão Zerar ──
   $('#btn-zerar').onclick = () => {
@@ -568,13 +612,13 @@ function _coletarDadosRelatorio(pedidos) {
 
 /**
  * Renderiza a tela de revisão que unifica todos os pedidos do período,
- * permitindo marcar peças como devolvidas antes de gerar o PDF final.
+ * permitindo marcar peças como devolvidas E MARCAR LOJAS (Potim/Roseira) antes de gerar o PDF final.
  * @param {Array} pedidos - Pedidos faturados filtrados pelo período
  * @param {string} dataInicio - "YYYY-MM-DD"
  * @param {string} dataFim - "YYYY-MM-DD"
  * @param {Function} onConfirmarPdf - (pedidosComDevolvidos, dataInicio, dataFim) => void
  * @param {Function} onVoltar - Volta para a tela de relatório
- * @param {Function} onSalvarDevolucoes - (pedidosAtualizados) => void – persiste devoluções
+ * @param {Function} onSalvarDevolucoes - (pedidosAtualizados) => void – persiste devoluções E lojas
  */
 function renderRevisao(pedidos, dataInicio, dataFim, onConfirmarPdf, onVoltar, onSalvarDevolucoes) {
   const container = $('#revisao-conteudo');
@@ -593,13 +637,18 @@ function renderRevisao(pedidos, dataInicio, dataFim, onConfirmarPdf, onVoltar, o
       if (!item.recebido || item.divergencia) return;
 
       const devolvido = item.devolvido || false;
+      const loja = item.loja || null;
+      
       itensHtml += `
         <div class="revisao-item ${devolvido ? 'revisao-devolvido' : ''}" data-pidx="${pIdx}" data-iidx="${iIdx}">
           <div class="revisao-item-info">
             <span class="item-tipo">${item.tipo}</span>
             <span class="item-nome">${item.nomeOriginal}</span>
+            ${loja ? `<span class="badge-loja ${loja}">${loja === 'potim' ? 'POTIM' : 'ROSEIRA'}</span>` : '<span class="badge-loja sem-loja">SEM LOJA</span>'}
           </div>
           <div class="revisao-item-valor">R$ ${item.valorUnitario.toFixed(2)}</div>
+          
+          <!-- Checkbox Devolvido -->
           <div class="campo-check">
             <label>
               <input type="checkbox" class="check-devolvido" data-pidx="${pIdx}" data-iidx="${iIdx}" ${devolvido ? 'checked' : ''}>
@@ -663,8 +712,8 @@ function renderRevisao(pedidos, dataInicio, dataFim, onConfirmarPdf, onVoltar, o
     </div>
 
     <div class="revisao-instrucao">
-      Marque como <strong>"Devolvido"</strong> as peças que foram devolvidas ao fornecedor.
-      O valor será subtraído automaticamente dos totais e refletido no PDF.
+      <strong>⚠️ IMPORTANTE:</strong> Marque a loja (Potim ou Roseira) para cada peça não-devolvida. 
+      Peças devolvidas não precisam ter loja marcada. O sistema validará antes de continuar.
     </div>
 
     <div class="revisao-pedidos">
@@ -672,12 +721,19 @@ function renderRevisao(pedidos, dataInicio, dataFim, onConfirmarPdf, onVoltar, o
     </div>
 
     <div class="conferencia-acoes">
-      <button class="btn btn-secondary" id="btn-revisao-voltar">Voltar ao Relatório</button>
-      <button class="btn btn-success" id="btn-revisao-confirmar">Confirmar e Visualizar</button>
+      <button class="btn btn-secondary" id="btn-revisao-voltar"><i class="fas fa-arrow-left"></i> Voltar ao Relatório</button>
+      <button class="btn btn-success" id="btn-revisao-confirmar"><i class="fas fa-check"></i> Confirmar e Visualizar</button>
     </div>
   `;
 
-  // ── Recalcula totais em tempo real ao alternar "Devolvido" ──
+  // ── Listener para recalcular totais ao marcar devolvido ──
+  container.querySelectorAll('.check-devolvido').forEach(cb => {
+    cb.addEventListener('change', () => {
+      recalcularTotais();
+    });
+  });
+  
+  // ── Recalcula totais em tempo real ──
   const recalcularTotais = () => {
     let novoTotalGeral = 0;
 
@@ -711,63 +767,168 @@ function renderRevisao(pedidos, dataInicio, dataFim, onConfirmarPdf, onVoltar, o
     if (totalEl) totalEl.textContent = `R$ ${novoTotalGeral.toFixed(2)}`;
   };
 
-  container.querySelectorAll('.check-devolvido').forEach(cb => {
-    cb.addEventListener('change', recalcularTotais);
-  });
-
   // ── Botão Voltar ──
   $('#btn-revisao-voltar').onclick = () => onVoltar();
 
   // ── Botão Confirmar e Gerar PDF ──
   $('#btn-revisao-confirmar').onclick = () => {
-    // Sincroniza os checkboxes com os objetos pedido
+    // Sincroniza apenas as devoluções (lojas já foram definidas na conferência)
     pedidos.forEach((pedido, pIdx) => {
       pedido.itens.forEach((item, iIdx) => {
         if (!item.recebido || item.divergencia) return;
-        const checkEl = container.querySelector(`.check-devolvido[data-pidx="${pIdx}"][data-iidx="${iIdx}"]`);
-        item.devolvido = checkEl ? checkEl.checked : false;
+        
+        const checkDevolvido = container.querySelector(`.check-devolvido[data-pidx="${pIdx}"][data-iidx="${iIdx}"]`);
+        item.devolvido = checkDevolvido ? checkDevolvido.checked : false;
+        
+        // Se devolvido, limpa a loja
+        if (item.devolvido) {
+          item.loja = null;
+        }
       });
     });
 
     // Persiste devoluções no localStorage
     onSalvarDevolucoes(pedidos);
 
-    // Abre a visualização com devoluções refletidas
+    // Abre a visualização com devoluções e lojas refletidas
     onConfirmarPdf(pedidos, dataInicio, dataFim);
   };
 }
 
 // ─── Tela 6: Visualização do Relatório ─────────────────────
 
+/**
+ * Calcula divisão de frete entre lojas (50/50 se ambas, 100% se uma só)
+ */
+function calcularDivisaoFrete(pedido) {
+  const itensValidos = pedido.itens.filter(i => i.recebido && !i.divergencia && !i.devolvido);
+  const lojas = new Set(itensValidos.map(i => i.loja).filter(Boolean));
+  
+  const temPotim = lojas.has('potim');
+  const temRoseira = lojas.has('roseira');
+  const frete = pedido.custoFrete || 0;
+  
+  let fretePotim = 0;
+  let freteRoseira = 0;
+  
+  if (temPotim && temRoseira) {
+    // Ambas lojas: 50/50
+    fretePotim = frete / 2;
+    freteRoseira = frete / 2;
+  } else if (temPotim) {
+    // Só Potim: 100%
+    fretePotim = frete;
+  } else if (temRoseira) {
+    // Só Roseira: 100%
+    freteRoseira = frete;
+  }
+  
+  return { fretePotim, freteRoseira, temAmbas: temPotim && temRoseira };
+}
+
+/**
+ * Calcula totais por loja (peças + frete)
+ */
+function calcularTotaisLojas(pedidos) {
+  let totalPecasPotim = 0;
+  let totalPecasRoseira = 0;
+  let totalFretePotim = 0;
+  let totalFreteRoseira = 0;
+  let qtdPecasPotim = 0;
+  let qtdPecasRoseira = 0;
+  
+  pedidos.forEach(pedido => {
+    // Peças por loja
+    pedido.itens.forEach(item => {
+      if (item.recebido && !item.divergencia && !item.devolvido) {
+        if (item.loja === 'potim') {
+          totalPecasPotim += item.valorUnitario;
+          qtdPecasPotim++;
+        }
+        if (item.loja === 'roseira') {
+          totalPecasRoseira += item.valorUnitario;
+          qtdPecasRoseira++;
+        }
+      }
+    });
+    
+    // Frete por loja
+    const { fretePotim, freteRoseira } = calcularDivisaoFrete(pedido);
+    totalFretePotim += fretePotim;
+    totalFreteRoseira += freteRoseira;
+  });
+  
+  return {
+    potim: {
+      pecas: totalPecasPotim,
+      frete: totalFretePotim,
+      total: totalPecasPotim + totalFretePotim,
+      quantidade: qtdPecasPotim
+    },
+    roseira: {
+      pecas: totalPecasRoseira,
+      frete: totalFreteRoseira,
+      total: totalPecasRoseira + totalFreteRoseira,
+      quantidade: qtdPecasRoseira
+    }
+  };
+}
+
 function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) {
   const container = $('#visualizacao-conteudo');
   const inicioFmt = _formatarDataBR(dataInicio);
   const fimFmt = _formatarDataBR(dataFim);
   const { totalGeral, divergencias, devolvidos, resumoPedidos } = _coletarDadosRelatorio(pedidos);
+  
+  // Calcula totalizadores por loja
+  const totaisLojas = calcularTotaisLojas(pedidos);
+  
+  // Total geral de peças
+  const totalPecasGeral = totaisLojas.potim.quantidade + totaisLojas.roseira.quantidade;
 
-  const pedidosHtml = resumoPedidos.map(resumo => `
-    <div class="preview-pedido">
-      <div class="preview-pedido-header">
-        <span class="pedido-id">#${resumo.sufixo}</span>
-        <span class="pedido-data">${resumo.dataFat}</span>
-        <span class="relatorio-subtotal">R$ ${resumo.subtotal.toFixed(2)}</span>
+  const pedidosHtml = resumoPedidos.map(resumo => {
+    // Busca pedido original para pegar divisão de frete
+    const pedidoOriginal = pedidos.find(p => p.id === resumo.pedidoId);
+    const { fretePotim, freteRoseira, temAmbas } = calcularDivisaoFrete(pedidoOriginal);
+    
+    // Renderiza itens com badges de loja
+    const itensHtml = resumo.itensValidos.map(item => {
+      const badgeLoja = item.loja 
+        ? `<span class="badge-loja ${item.loja}">${item.loja === 'potim' ? 'Potim' : 'Roseira'}</span>`
+        : '';
+      
+      return `
+        <div class="preview-item">
+          <span class="item-tipo">${item.tipo}</span>
+          <span class="item-nome">${item.nomeOriginal}${badgeLoja}</span>
+          <span class="preview-valor">R$ ${item.valorUnitario.toFixed(2)}</span>
+        </div>
+      `;
+    }).join('');
+    
+    // Info de frete com divisão se necessário
+    const freteInfo = temAmbas 
+      ? `Frete Potim: R$ ${fretePotim.toFixed(2)} | Roseira: R$ ${freteRoseira.toFixed(2)}`
+      : `Frete: R$ ${resumo.frete.toFixed(2)}`;
+    
+    return `
+      <div class="preview-pedido">
+        <div class="preview-pedido-header">
+          <span class="pedido-id">#${resumo.sufixo}</span>
+          <span class="pedido-data">${resumo.dataFat}</span>
+          <span class="relatorio-subtotal">R$ ${resumo.subtotal.toFixed(2)}</span>
+        </div>
+        <div class="preview-pedido-meta">
+          <span>Peças: R$ ${resumo.subtotalPecas.toFixed(2)}</span>
+          <span>${freteInfo}</span>
+          ${resumo.valorDevolvidos > 0 ? `<span class="preview-devolvido">Devolvido: -R$ ${resumo.valorDevolvidos.toFixed(2)}</span>` : ''}
+        </div>
+        <div class="preview-itens">
+          ${itensHtml || '<p class="empty-state">Sem peças válidas neste pedido.</p>'}
+        </div>
       </div>
-      <div class="preview-pedido-meta">
-        <span>Peças: R$ ${resumo.subtotalPecas.toFixed(2)}</span>
-        <span>Frete: R$ ${resumo.frete.toFixed(2)}</span>
-        ${resumo.valorDevolvidos > 0 ? `<span class="preview-devolvido">Devolvido: -R$ ${resumo.valorDevolvidos.toFixed(2)}</span>` : ''}
-      </div>
-      <div class="preview-itens">
-        ${resumo.itensValidos.length > 0 ? resumo.itensValidos.map(item => `
-          <div class="preview-item">
-            <span class="item-tipo">${item.tipo}</span>
-            <span class="item-nome">${item.nomeOriginal}</span>
-            <span class="preview-valor">R$ ${item.valorUnitario.toFixed(2)}</span>
-          </div>
-        `).join('') : '<p class="empty-state">Sem peças válidas neste pedido.</p>'}
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   const devolvidosHtml = devolvidos.length > 0 ? `
     <div class="preview-secao">
@@ -799,6 +960,30 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
       </div>
     </div>
   ` : '';
+  
+  // Totalizador por loja (NOVO)
+  const totalizadorHtml = `
+    <section class="preview-secao totalizador-lojas">
+      <h3>Totalizador por Loja</h3>
+      <p class="totalizador-geral"><strong>Total de peças usadas:</strong> ${totalPecasGeral} peças</p>
+      
+      <div class="totalizador-loja potim">
+        <h4><span class="badge-loja potim">POTIM</span></h4>
+        <p>Quantidade: <strong>${totaisLojas.potim.quantidade} peças</strong></p>
+        <p>Valor peças: <strong>R$ ${totaisLojas.potim.pecas.toFixed(2)}</strong></p>
+        <p>Frete: <strong>R$ ${totaisLojas.potim.frete.toFixed(2)}</strong></p>
+        <p class="total-loja">Total: <strong>R$ ${totaisLojas.potim.total.toFixed(2)}</strong></p>
+      </div>
+      
+      <div class="totalizador-loja roseira">
+        <h4><span class="badge-loja roseira">ROSEIRA</span></h4>
+        <p>Quantidade: <strong>${totaisLojas.roseira.quantidade} peças</strong></p>
+        <p>Valor peças: <strong>R$ ${totaisLojas.roseira.pecas.toFixed(2)}</strong></p>
+        <p>Frete: <strong>R$ ${totaisLojas.roseira.frete.toFixed(2)}</strong></p>
+        <p class="total-loja">Total: <strong>R$ ${totaisLojas.roseira.total.toFixed(2)}</strong></p>
+      </div>
+    </section>
+  `;
 
   container.innerHTML = `
     <div class="flow-steps no-print">
@@ -833,6 +1018,7 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
 
       ${devolvidosHtml}
       ${divergenciasHtml}
+      ${totalizadorHtml}
     </article>
   `;
 

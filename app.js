@@ -18,24 +18,46 @@ import {
 
 function initTema() {
   const saved = localStorage.getItem('theme');
-  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  const btnTema = document.getElementById('btn-tema');
+  
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    atualizarIconeTema(saved);
+  }
 
-  document.getElementById('btn-tema').addEventListener('click', () => {
+  btnTema.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+    atualizarIconeTema(next);
   });
+}
+
+function atualizarIconeTema(tema) {
+  const btnTema = document.getElementById('btn-tema');
+  const icon = btnTema.querySelector('i');
+  if (tema === 'dark') {
+    icon.className = 'fas fa-sun';
+  } else {
+    icon.className = 'fas fa-moon';
+  }
 }
 
 // ─── Navegação por Abas ─────────────────────────────────────
 
 function initNavegacao() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  // Bottom navigation
+  document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const secao = btn.dataset.secao;
       navegarPara(secao);
       atualizarTela(secao);
+      
+      // Atualiza estado ativo da bottom nav
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.secao === secao);
+      });
     });
   });
 }
@@ -73,11 +95,18 @@ function atualizarTela(secaoId) {
       const emConferencia = storage.listarPorStatus('CONFERENCIA');
       emConferencia.forEach(p => storage.atualizarPedido(p.id, { status: 'AGUARDANDO' }));
       pedidoEmConferenciaId = null;
+      
+      // Limpa a tela de conferência
+      document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
+      
       renderFilaEspera(storage.listarPorStatus('AGUARDANDO'), iniciarConferencia);
       break;
     }
     case 'tela-conferencia':
-      // Renderizada on-demand ao clicar "Iniciar Conferência"
+      // Se não há pedido em conferência, limpa a tela
+      if (!pedidoEmConferenciaId) {
+        document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
+      }
       break;
     case 'tela-relatorio':
       renderRelatorio(
@@ -136,6 +165,10 @@ function iniciarConferencia(pedidoId) {
 function faturarPedido(pedidoId, dados) {
   storage.atualizarPedido(pedidoId, dados);
   pedidoEmConferenciaId = null;
+  
+  // Limpa a tela de conferência
+  document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
+  
   navegarPara('tela-relatorio');
   atualizarTela('tela-relatorio');
 }
@@ -146,6 +179,10 @@ function voltarParaFila() {
     storage.atualizarPedido(pedidoEmConferenciaId, { status: 'AGUARDANDO' });
     pedidoEmConferenciaId = null;
   }
+  
+  // Limpa a tela de conferência
+  document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
+  
   navegarPara('tela-fila');
   atualizarTela('tela-fila');
 }
@@ -155,11 +192,13 @@ function zerarMemoria() {
   navegarPara('tela-entrada');
   atualizarTela('tela-entrada');
   // Limpa visuais residuais
+  document.getElementById('input-pedido').value = '';
   document.getElementById('resultado-formatado').textContent = '';
   document.getElementById('resultado-formatado').classList.add('hidden');
   document.getElementById('resumo-pedido').innerHTML = '';
   document.getElementById('resumo-pedido').classList.add('hidden');
   document.getElementById('btn-copiar').classList.add('hidden');
+  document.getElementById('btn-processar').classList.add('hidden');
   document.getElementById('conferencia-conteudo').innerHTML = '<p class="empty-state">Selecione um pedido na Fila para iniciar a conferência.</p>';
   document.getElementById('relatorio-conteudo').innerHTML = '';
   document.getElementById('revisao-conteudo').innerHTML = '';
