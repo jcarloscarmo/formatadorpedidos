@@ -241,8 +241,24 @@ function voltarParaRelatorio() {
 
 /** Persiste as marcações de devolução no localStorage */
 function salvarDevolucoes(pedidosComDevolucoes) {
-  pedidosComDevolucoes.forEach(pedido => {
-    storage.atualizarPedido(pedido.id, { itens: pedido.itens });
+  pedidosComDevolucoes.forEach(pedidoRevisado => {
+    // Lê pedido atual do storage para preservar todos os campos
+    const pedidoAtual = storage.buscarPedido(pedidoRevisado.id);
+    if (!pedidoAtual) return;
+    
+    // Atualiza apenas devolvido e loja (loja é limpa se devolvido)
+    const itensAtualizados = pedidoAtual.itens.map((itemAtual, idx) => {
+      const itemRevisado = pedidoRevisado.itens[idx];
+      if (!itemRevisado) return itemAtual;
+      
+      return {
+        ...itemAtual,
+        devolvido: itemRevisado.devolvido || false,
+        loja: itemRevisado.devolvido ? null : itemAtual.loja
+      };
+    });
+    
+    storage.atualizarPedido(pedidoRevisado.id, { itens: itensAtualizados });
   });
 }
 
