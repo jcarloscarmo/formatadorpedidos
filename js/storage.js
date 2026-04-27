@@ -2,6 +2,7 @@
 // Todas as operações de CRUD no localStorage ficam isoladas aqui.
 
 const STORAGE_KEY = 'lojacell_pedidos';
+const PRICE_HISTORY_KEY = 'lojacell_price_history';
 
 const DIAS_SEMANA = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
@@ -16,6 +17,32 @@ function _ler() {
 
 function _gravar(pedidos) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(pedidos));
+}
+
+function _lerHistoricoPrecos() {
+  try {
+    const raw = localStorage.getItem(PRICE_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function _gravarHistoricoPrecos(historico) {
+  localStorage.setItem(PRICE_HISTORY_KEY, JSON.stringify(historico));
+}
+
+function _atualizarHistoricoComPedidos(pedidos) {
+  const historico = _lerHistoricoPrecos();
+
+  pedidos.forEach(pedido => {
+    pedido.itens.forEach(item => {
+      if (!item.nomeOriginal || !item.recebido || item.divergencia || item.valorUnitario <= 0) return;
+      historico[item.nomeOriginal] = item.valorUnitario;
+    });
+  });
+
+  _gravarHistoricoPrecos(historico);
 }
 
 /**
@@ -111,6 +138,11 @@ export function atualizarPedido(id, dados) {
 
   pedidos[idx] = { ...pedidos[idx], ...dados };
   _gravar(pedidos);
+
+  if (pedidos[idx].status === 'FATURADO') {
+    _atualizarHistoricoComPedidos([pedidos[idx]]);
+  }
+
   return pedidos[idx];
 }
 
@@ -123,9 +155,10 @@ export function removerPedido(id) {
   _gravar(pedidos);
 }
 
-/** Apaga todos os pedidos (reset completo). */
+/** Apaga todos os pedidos, preservando histórico local de peças e preços. */
 export function zerarMemoria() {
-  localStorage.clear();
+  _atualizarHistoricoComPedidos(_ler());
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 /**
@@ -135,6 +168,11 @@ export function zerarMemoria() {
  * @returns {number|null} O valor unitário encontrado ou null
  */
 export function getLastPrice(nomeOriginal) {
+  const historico = _lerHistoricoPrecos();
+  if (Object.prototype.hasOwnProperty.call(historico, nomeOriginal)) {
+    return historico[nomeOriginal];
+  }
+
   const faturados = _ler()
     .filter(p => p.status === 'FATURADO')
     .sort((a, b) => (b.dataFaturamento || b.dataCriacao) - (a.dataFaturamento || a.dataCriacao));
