@@ -214,7 +214,7 @@ function renderConferencia(pedido, precosHistoricos, onFaturar, onVoltar) {
     </div>
     <div class="campo-frete">
       <label for="input-frete">Valor do Frete (R$)</label>
-      <input type="number" id="input-frete" step="0.01" min="0" value="${pedido.custoFrete || ''}" placeholder="0,00">
+      <input type="number" id="input-frete" step="0.01" min="0" value="${pedido.custoFrete || 15}" placeholder="15,00">
     </div>
     <div class="itens-lista">
       ${itensHtml}
@@ -860,63 +860,56 @@ function calcularDivisaoFrete(pedido) {
 }
 
 /**
- * Calcula totais por loja (peças + frete)
+ * Calcula dados consolidados por loja com lista de peças e frete separado.
  */
 function calcularTotaisLojas(pedidos) {
-  let totalPecasPotim = 0;
-  let totalPecasRoseira = 0;
-  let totalFretePotim = 0;
-  let totalFreteRoseira = 0;
-  let qtdPecasPotim = 0;
-  let qtdPecasRoseira = 0;
-  let qtdPecasSemLoja = 0;
-  let valorPecasSemLoja = 0;
-  let pedidosSemLoja = new Set(); // IDs dos pedidos com peças sem loja
-  
-  pedidos.forEach(pedido => {
-    // Peças por loja
-    pedido.itens.forEach(item => {
-      if (item.recebido && !item.divergencia && !item.devolvido) {
-        if (item.loja === 'potim') {
-          totalPecasPotim += item.valorUnitario;
-          qtdPecasPotim++;
-        } else if (item.loja === 'roseira') {
-          totalPecasRoseira += item.valorUnitario;
-          qtdPecasRoseira++;
-        } else {
-          // Peça sem loja definida
-          qtdPecasSemLoja++;
-          valorPecasSemLoja += item.valorUnitario;
-          pedidosSemLoja.add(pedido.id);
-        }
-      }
-    });
-    
-    // Frete por loja
-    const { fretePotim, freteRoseira } = calcularDivisaoFrete(pedido);
-    totalFretePotim += fretePotim;
-    totalFreteRoseira += freteRoseira;
+  const criarResumoLoja = () => ({
+    itens: [],
+    pecas: 0,
+    frete: 0,
+    quantidade: 0
   });
-  
-  return {
-    potim: {
-      pecas: totalPecasPotim,
-      frete: totalFretePotim,
-      total: totalPecasPotim + totalFretePotim,
-      quantidade: qtdPecasPotim
-    },
-    roseira: {
-      pecas: totalPecasRoseira,
-      frete: totalFreteRoseira,
-      total: totalPecasRoseira + totalFreteRoseira,
-      quantidade: qtdPecasRoseira
-    },
+
+  const totais = {
+    potim: criarResumoLoja(),
+    roseira: criarResumoLoja(),
     semLoja: {
-      quantidade: qtdPecasSemLoja,
-      valor: valorPecasSemLoja,
-      pedidos: Array.from(pedidosSemLoja)
+      quantidade: 0,
+      valor: 0,
+      pedidos: []
     }
   };
+
+  const pedidosSemLoja = new Set();
+
+  pedidos.forEach(pedido => {
+    pedido.itens.forEach(item => {
+      if (!item.recebido || item.divergencia || item.devolvido) return;
+
+      if (item.loja === 'potim' || item.loja === 'roseira') {
+        totais[item.loja].itens.push({
+          pedidoId: pedido.id,
+          tipo: item.tipo,
+          nomeOriginal: item.nomeOriginal,
+          valorUnitario: item.valorUnitario
+        });
+        totais[item.loja].quantidade++;
+        totais[item.loja].pecas += item.valorUnitario;
+      } else {
+        totais.semLoja.quantidade++;
+        totais.semLoja.valor += item.valorUnitario;
+        pedidosSemLoja.add(pedido.id);
+      }
+    });
+
+    const { fretePotim, freteRoseira } = calcularDivisaoFrete(pedido);
+    totais.potim.frete += fretePotim;
+    totais.roseira.frete += freteRoseira;
+  });
+
+  totais.semLoja.pedidos = Array.from(pedidosSemLoja);
+
+  return totais;
 }
 
 function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) {
@@ -932,10 +925,6 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
   const totalPecasGeral = totaisLojas.potim.quantidade + totaisLojas.roseira.quantidade + totaisLojas.semLoja.quantidade;
 
   const pedidosHtml = resumoPedidos.map(resumo => {
-    // Busca pedido original para pegar divisão de frete
-    const pedidoOriginal = pedidos.find(p => p.id === resumo.pedidoId);
-    const { fretePotim, freteRoseira, temAmbas } = calcularDivisaoFrete(pedidoOriginal);
-    
     // Renderiza itens com badges de loja
     const itensHtml = resumo.itensValidos.map(item => {
       const badgeLoja = item.loja 
@@ -944,18 +933,15 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
       
       return `
         <div class="preview-item">
-          <span class="item-tipo">${item.tipo}</span>
-          <span class="item-nome">${item.nomeOriginal}${badgeLoja}</span>
+          <div class="preview-item-info">
+            <span class="item-nome">${item.nomeOriginal}${badgeLoja}</span>
+            <span class="item-tipo">${item.tipo}</span>
+          </div>
           <span class="preview-valor">R$ ${item.valorUnitario.toFixed(2)}</span>
         </div>
       `;
     }).join('');
-    
-    // Info de frete com divisão se necessário
-    const freteInfo = temAmbas 
-      ? `Frete Potim: R$ ${fretePotim.toFixed(2)} | Roseira: R$ ${freteRoseira.toFixed(2)}`
-      : `Frete: R$ ${resumo.frete.toFixed(2)}`;
-    
+
     return `
       <div class="preview-pedido">
         <div class="preview-pedido-header">
@@ -965,7 +951,7 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
         </div>
         <div class="preview-pedido-meta">
           <span>Peças: R$ ${resumo.subtotalPecas.toFixed(2)}</span>
-          <span>${freteInfo}</span>
+          <span>Frete: R$ ${resumo.frete.toFixed(2)}</span>
           ${resumo.valorDevolvidos > 0 ? `<span class="preview-devolvido">Devolvido: -R$ ${resumo.valorDevolvidos.toFixed(2)}</span>` : ''}
         </div>
         <div class="preview-itens">
@@ -975,18 +961,49 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
     `;
   }).join('');
 
+  const formatarListaLoja = (itens) => itens.map(item => `
+    <div class="totalizador-linha-item">
+      <span class="pedido-id">#${extrairSufixoId(item.pedidoId)}</span>
+      <div class="preview-item-info">
+        <span class="item-nome">${item.nomeOriginal}</span>
+        <span class="item-tipo">${item.tipo}</span>
+      </div>
+      <span class="preview-valor">R$ ${item.valorUnitario.toFixed(2)}</span>
+    </div>
+  `).join('');
+
+  const criarCardLoja = (loja, titulo, classe) => `
+    <div class="totalizador-loja ${classe}">
+      <h4><span class="badge-loja ${classe}">${titulo}</span></h4>
+      <div class="totalizador-lista">
+        ${loja.itens.length > 0 ? formatarListaLoja(loja.itens) : '<p class="empty-state">Nenhuma peça nesta loja.</p>'}
+      </div>
+      <div class="totalizador-resumo-loja">
+        <p><strong>Total de peças:</strong> ${loja.quantidade}</p>
+        <p><strong>Soma das peças:</strong> R$ ${loja.pecas.toFixed(2)}</p>
+        <p><strong>Frete:</strong> R$ ${loja.frete.toFixed(2)}</p>
+      </div>
+    </div>
+  `;
+
   const devolvidosHtml = devolvidos.length > 0 ? `
-    <div class="preview-secao">
-      <h3>Peças Devolvidas</h3>
-      <div class="preview-lista-simples">
+    <div class="totalizador-loja totalizador-devolucoes">
+      <h4>Devoluções</h4>
+      <div class="totalizador-lista">
         ${devolvidos.map(item => `
-          <div class="preview-item preview-item-devolvido">
+          <div class="totalizador-linha-item totalizador-linha-devolucao">
             <span class="pedido-id">#${extrairSufixoId(item.pedidoId)}</span>
-            <span class="item-tipo">${item.tipo}</span>
-            <span class="item-nome">${item.nomeOriginal}</span>
+            <div class="preview-item-info">
+              <span class="item-nome">${item.nomeOriginal}</span>
+              <span class="item-tipo">${item.tipo}</span>
+            </div>
             <span class="preview-valor">R$ ${item.valorUnitario.toFixed(2)}</span>
           </div>
         `).join('')}
+      </div>
+      <div class="totalizador-resumo-loja">
+        <p><strong>Total de peças:</strong> ${devolvidos.length}</p>
+        <p><strong>Soma das devoluções:</strong> R$ ${devolvidos.reduce((acc, item) => acc + item.valorUnitario, 0).toFixed(2)}</p>
       </div>
     </div>
   ` : '';
@@ -998,8 +1015,10 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
         ${divergencias.map(item => `
           <div class="preview-item">
             <span class="pedido-id">#${extrairSufixoId(item.pedidoId)}</span>
-            <span class="item-tipo">${item.tipo}</span>
-            <span class="item-nome">${item.nomeOriginal}</span>
+            <div class="preview-item-info">
+              <span class="item-nome">${item.nomeOriginal}</span>
+              <span class="item-tipo">${item.tipo}</span>
+            </div>
           </div>
         `).join('')}
       </div>
@@ -1020,21 +1039,10 @@ function renderVisualizacao(pedidos, dataInicio, dataFim, onVoltar, onImprimir) 
       <h3>Totalizador por Loja</h3>
       <p class="totalizador-geral"><strong>Total de peças usadas:</strong> ${totalPecasGeral} peças</p>
       ${avisoSemLoja}
-      
-      <div class="totalizador-loja potim">
-        <h4><span class="badge-loja potim">POTIM</span></h4>
-        <p>Quantidade: <strong>${totaisLojas.potim.quantidade} peças</strong></p>
-        <p>Valor peças: <strong>R$ ${totaisLojas.potim.pecas.toFixed(2)}</strong></p>
-        <p>Frete: <strong>R$ ${totaisLojas.potim.frete.toFixed(2)}</strong></p>
-        <p class="total-loja">Total: <strong>R$ ${totaisLojas.potim.total.toFixed(2)}</strong></p>
-      </div>
-      
-      <div class="totalizador-loja roseira">
-        <h4><span class="badge-loja roseira">ROSEIRA</span></h4>
-        <p>Quantidade: <strong>${totaisLojas.roseira.quantidade} peças</strong></p>
-        <p>Valor peças: <strong>R$ ${totaisLojas.roseira.pecas.toFixed(2)}</strong></p>
-        <p>Frete: <strong>R$ ${totaisLojas.roseira.frete.toFixed(2)}</strong></p>
-        <p class="total-loja">Total: <strong>R$ ${totaisLojas.roseira.total.toFixed(2)}</strong></p>
+      <div class="totalizador-cards-lojas">
+        ${criarCardLoja(totaisLojas.potim, 'POTIM', 'potim')}
+        ${criarCardLoja(totaisLojas.roseira, 'ROSEIRA', 'roseira')}
+        ${devolvidosHtml}
       </div>
     </section>
   `;

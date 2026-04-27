@@ -1169,6 +1169,31 @@ input[type="text"]:focus {
   font-size: 0.9rem;
 }
 
+.preview-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.preview-relatorio .preview-item .item-nome,
+.preview-relatorio .totalizador-linha-item .item-nome {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #1f2937;
+  word-break: break-word;
+}
+
+.preview-relatorio .preview-item .item-tipo,
+.preview-relatorio .totalizador-linha-item .item-tipo {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #7a8594;
+  text-transform: uppercase;
+  letter-spacing: 0.25px;
+}
+
 .preview-valor,
 .preview-devolvido {
   font-weight: 700;
@@ -1203,6 +1228,12 @@ input[type="text"]:focus {
   margin-bottom: 20px;
   text-align: center;
   font-weight: 700;
+}
+
+.totalizador-cards-lojas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
 }
 
 .totalizador-geral {
@@ -1253,8 +1284,10 @@ input[type="text"]:focus {
   padding: 16px;
   border: 2px solid var(--border);
   border-radius: 12px;
-  margin-bottom: 16px;
   background: var(--container-bg);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .totalizador-loja.potim {
@@ -1280,20 +1313,52 @@ input[type="text"]:focus {
   color: var(--text);
 }
 
-.totalizador-loja .total-loja {
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin-top: 12px;
+.totalizador-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.totalizador-linha-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+}
+
+.totalizador-resumo-loja {
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
-.totalizador-loja.potim .total-loja {
-  color: var(--loja-potim);
+.totalizador-resumo-loja p:last-child {
+  margin-bottom: 0;
 }
 
-.totalizador-loja.roseira .total-loja {
-  color: var(--loja-roseira);
+.totalizador-devolucoes {
+  border-color: #dc3545;
+  background: #fff1f3;
+}
+
+.totalizador-devolucoes h4 {
+  color: #b42318;
+}
+
+.totalizador-linha-devolucao {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(220, 53, 69, 0.2);
+}
+
+.totalizador-devolucoes .preview-valor,
+.totalizador-devolucoes .pedido-id {
+  color: #b42318;
 }
 
 /* ─── Ações Destrutivas ────────────────────────────────── */

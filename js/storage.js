@@ -76,7 +76,7 @@ export function criarPedido(itens) {
     dataCriacao: Date.now(),
     dataFaturamento: null,
     status: 'AGUARDANDO',
-    custoFrete: 0,
+    custoFrete: 15,
     itens: itens.map(item => ({
       tipo: item.tipo,
       nomeOriginal: item.nomeOriginal,
